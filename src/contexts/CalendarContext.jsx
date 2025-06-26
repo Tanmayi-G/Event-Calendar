@@ -2,7 +2,6 @@ import { createContext, useContext, useState } from "react";
 import { startOfToday } from "date-fns";
 
 const CalendarContext = createContext();
-
 export const useCalendar = () => useContext(CalendarContext);
 
 export const CalendarProvider = ({ children }) => {
@@ -11,6 +10,10 @@ export const CalendarProvider = ({ children }) => {
   const [events, setEvents] = useState([]);
   const [selectedDate, setSelectedDate] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // 👇 Add these new states for viewing event details
+  const [isViewModalOpen, setIsViewModalOpen] = useState(false);
+  const [selectedEvent, setSelectedEvent] = useState(null);
 
   const addEvent = (event) => setEvents((prev) => [...prev, event]);
 
@@ -27,6 +30,10 @@ export const CalendarProvider = ({ children }) => {
         setSelectedDate,
         isModalOpen,
         setIsModalOpen,
+        isViewModalOpen,
+        setIsViewModalOpen,
+        selectedEvent,
+        setSelectedEvent,
       }}
     >
       {children}

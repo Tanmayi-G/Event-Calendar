@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCalendar } from "../../contexts/CalendarContext";
 import { format } from "date-fns";
 
@@ -11,9 +11,12 @@ const COLOR_OPTIONS = [
 ];
 
 const EventModal = () => {
-  const { selectedDate, setIsModalOpen, addEvent } = useCalendar();
+  const { selectedDate, setIsModalOpen, addEvent, selectedEvent, setSelectedEvent, setIsViewModalOpen, setEvents, events } = useCalendar();
+
+  const isEditing = !!selectedEvent;
+
   const [title, setTitle] = useState("");
-  const [date, setDate] = useState(format(selectedDate, "yyyy-MM-dd"));
+  const [date, setDate] = useState("");
   const [time, setTime] = useState("");
   const [description, setDescription] = useState("");
   const [recurrence, setRecurrence] = useState("none");
@@ -32,19 +35,43 @@ const EventModal = () => {
     return slots;
   };
 
+  useEffect(() => {
+    if (isEditing) {
+      const { title, date, time, description, recurrence, color } = selectedEvent;
+      setTitle(title);
+      setDate(date);
+      setTime(time);
+      setDescription(description);
+      setRecurrence(recurrence);
+      setColor(color);
+    } else if (selectedDate) {
+      setDate(format(selectedDate, "yyyy-MM-dd"));
+    }
+  }, [isEditing, selectedDate, selectedEvent]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title || !time) return;
-    addEvent({ title, date, time, description, recurrence, color });
+    if (!title || !time || !date) return;
+
+    const newEvent = { title, date, time, description, recurrence, color };
+
+    if (isEditing) {
+      setEvents(events.map((event) => (event === selectedEvent ? newEvent : event)));
+      setSelectedEvent(null);
+      setIsViewModalOpen(false);
+    } else {
+      addEvent(newEvent);
+    }
+
     setIsModalOpen(false);
   };
 
-  if (!selectedDate) return null;
+  if (!selectedDate && !selectedEvent) return null;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
       <div className="w-full max-w-xl rounded-2xl bg-base-100 p-6 shadow-lg">
-        <h2 className="mb-4 text-xl font-semibold">Create Event</h2>
+        <h2 className="mb-4 text-xl font-semibold">{isEditing ? "Edit Event" : "Create Event"}</h2>
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="form-control">
             <input type="text" placeholder="Add title" className="input input-bordered w-full text-lg" value={title} onChange={(e) => setTitle(e.target.value)} required />
@@ -103,7 +130,14 @@ const EventModal = () => {
           </div>
 
           <div className="flex justify-end gap-3 pt-4">
-            <button type="button" onClick={() => setIsModalOpen(false)} className="btn btn-ghost">
+            <button
+              type="button"
+              onClick={() => {
+                setIsModalOpen(false);
+                setSelectedEvent(null);
+              }}
+              className="btn btn-ghost"
+            >
               Cancel
             </button>
             <button type="submit" className="btn btn-primary">
