@@ -23,10 +23,8 @@ const Header = () => {
       </div>
 
       <div className="flex items-center space-x-4">
-        <select className="select cursor-pointer">
-          <option selected={true} value="month">
-            Month
-          </option>
+        <select defaultValue="month" className="select cursor-pointer">
+          <option value="month">Month</option>
           <option value="week">Week</option>
           <option value="day">Day</option>
         </select>
