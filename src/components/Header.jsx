@@ -1,13 +1,23 @@
 import { Menu, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
 import { useCalendar } from "../contexts/CalendarContext";
-import { format, startOfToday, addMonths, subMonths } from "date-fns";
+import { format, startOfToday, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
 
 const Header = () => {
-  const { currentDate, setCurrentDate } = useCalendar();
+  const { currentDate, setCurrentDate, viewMode, setViewMode } = useCalendar();
 
   const handleToday = () => setCurrentDate(startOfToday());
-  const handlePrev = () => setCurrentDate(subMonths(currentDate, 1));
-  const handleNext = () => setCurrentDate(addMonths(currentDate, 1));
+
+  const handlePrev = () => {
+    if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
+    else if (viewMode === "week") setCurrentDate(subWeeks(currentDate, 1));
+    else if (viewMode === "day") setCurrentDate(subDays(currentDate, 1));
+  };
+
+  const handleNext = () => {
+    if (viewMode === "month") setCurrentDate(addMonths(currentDate, 1));
+    else if (viewMode === "week") setCurrentDate(addWeeks(currentDate, 1));
+    else if (viewMode === "day") setCurrentDate(addDays(currentDate, 1));
+  };
 
   return (
     <div className="mx-3 py-4 flex justify-between items-center">
@@ -29,11 +39,11 @@ const Header = () => {
           <ChevronRight className="cursor-pointer" onClick={handleNext} />
         </div>
 
-        <h1 className="hidden text-lg lg:block">{format(currentDate, "MMMM d yyyy")}</h1>
+        <h1 className="hidden text-lg lg:block">{format(currentDate, viewMode === "day" ? "EEEE, MMMM d yyyy" : viewMode === "week" ? "wo 'week of' MMMM yyyy" : "MMMM yyyy")}</h1>
       </div>
 
       <div className="flex items-center space-x-4">
-        <select defaultValue="month" className="select cursor-pointer">
+        <select value={viewMode} onChange={(e) => setViewMode(e.target.value)} className="select cursor-pointer">
           <option value="month">Month</option>
           <option value="week">Week</option>
           <option value="day">Day</option>
