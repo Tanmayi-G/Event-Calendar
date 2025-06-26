@@ -1,6 +1,14 @@
 import { Menu, CalendarDays, ChevronLeft, ChevronRight } from "lucide-react";
+import { useCalendar } from "../contexts/CalendarContext";
+import { format, startOfToday, addMonths, subMonths } from "date-fns";
 
 const Header = () => {
+  const { currentDate, setCurrentDate } = useCalendar();
+
+  const handleToday = () => setCurrentDate(startOfToday());
+  const handlePrev = () => setCurrentDate(subMonths(currentDate, 1));
+  const handleNext = () => setCurrentDate(addMonths(currentDate, 1));
+
   return (
     <div className="mx-3 py-4 flex justify-between items-center">
       <div className="flex items-center gap-3">
@@ -12,14 +20,16 @@ const Header = () => {
           <h1 className="text-lg font-bold ml-1">Calendar</h1>
         </div>
 
-        <button className="btn btn-outline mx-2">Today</button>
+        <button onClick={handleToday} className="btn btn-outline mx-2">
+          Today
+        </button>
 
         <div className="flex items-center gap-3">
-          <ChevronLeft className="cursor-pointer" />
-          <ChevronRight className="cursor-pointer" />
+          <ChevronLeft className="cursor-pointer" onClick={handlePrev} />
+          <ChevronRight className="cursor-pointer" onClick={handleNext} />
         </div>
 
-        <h1 className="hidden text-lg lg:block">June 26 2025</h1>
+        <h1 className="hidden text-lg lg:block">{format(currentDate, "MMMM d yyyy")}</h1>
       </div>
 
       <div className="flex items-center space-x-4">

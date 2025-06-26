@@ -1,10 +1,16 @@
-import { getYear, getMonth as dfGetMonth, startOfMonth, getDay, addDays } from "date-fns";
+import { startOfMonth, startOfWeek, addDays, addWeeks } from "date-fns";
 
-export const getMonth = (month = dfGetMonth(new Date())) => {
-  const year = getYear(new Date());
-  const firstDayOfMonth = getDay(startOfMonth(new Date(year, month)));
+export const getMonth = (date = new Date()) => {
+  const start = startOfWeek(startOfMonth(date), { weekStartsOn: 0 });
+  const weeks = [];
 
-  let dayCounter = -firstDayOfMonth;
+  for (let i = 0; i < 5; i++) {
+    const week = [];
+    for (let j = 0; j < 7; j++) {
+      week.push(addDays(addWeeks(start, i), j));
+    }
+    weeks.push(week);
+  }
 
-  return Array.from({ length: 5 }, () => Array.from({ length: 7 }, () => addDays(new Date(year, month, 1), dayCounter++)));
+  return weeks;
 };

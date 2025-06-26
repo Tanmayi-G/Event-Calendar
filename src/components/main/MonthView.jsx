@@ -1,9 +1,11 @@
 import { Fragment } from "react";
 import { getMonth } from "../../../utils/getTime";
 import MonthViewBox from "./MonthViewBox";
+import { useCalendar } from "../../contexts/CalendarContext";
 
 const MonthView = () => {
-  const currentMonth = getMonth();
+  const { currentDate } = useCalendar();
+  const currentMonth = getMonth(currentDate);
 
   return (
     <section className="grid grid-cols-7 grid-rows-5 lg:h-[89vh]">
