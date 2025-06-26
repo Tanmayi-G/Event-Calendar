@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCalendar } from "../../contexts/CalendarContext";
-import { format, addDays, addWeeks, addMonths } from "date-fns";
+import { format, addDays, addWeeks, addMonths, parse, isAfter, isBefore } from "date-fns";
 import toast from "react-hot-toast";
 
 const COLOR_OPTIONS = [
@@ -18,13 +18,15 @@ const EventModal = () => {
 
   const [title, setTitle] = useState("");
   const [date, setDate] = useState("");
-  const [time, setTime] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [description, setDescription] = useState("");
   const [recurrence, setRecurrence] = useState("none");
   const [color, setColor] = useState("default");
   const [customInterval, setCustomInterval] = useState(1);
   const [weeklyDays, setWeeklyDays] = useState([]);
   const [endDate, setEndDate] = useState("");
+  const [conflicts, setConflicts] = useState([]);
 
   const generateTimeSlots = () => {
     const slots = [];
@@ -37,6 +39,49 @@ const EventModal = () => {
       }
     }
     return slots;
+  };
+
+  const timeToMinutes = (timeStr) => {
+    const [time, ampm] = timeStr.split(" ");
+    const [hours, minutes] = time.split(":").map(Number);
+    let totalHours = hours;
+
+    if (ampm === "PM" && hours !== 12) totalHours += 12;
+    if (ampm === "AM" && hours === 12) totalHours = 0;
+
+    return totalHours * 60 + minutes;
+  };
+
+  const checkConflicts = (eventDate, eventStartTime, eventEndTime, excludeEvent = null) => {
+    const eventStart = timeToMinutes(eventStartTime);
+    const eventEnd = timeToMinutes(eventEndTime);
+
+    const conflictingEvents = events.filter((event) => {
+      if (excludeEvent && event === excludeEvent) return false;
+
+      if (event.date !== eventDate) return false;
+
+      const existingStart = timeToMinutes(event.startTime);
+      const existingEnd = timeToMinutes(event.endTime);
+
+      return eventStart < existingEnd && eventEnd > existingStart;
+    });
+
+    return conflictingEvents;
+  };
+
+  useEffect(() => {
+    if (date && startTime && endTime) {
+      const conflictingEvents = checkConflicts(date, startTime, endTime, isEditing ? selectedEvent : null);
+      setConflicts(conflictingEvents);
+    } else {
+      setConflicts([]);
+    }
+  }, [date, startTime, endTime, events, isEditing, selectedEvent]);
+
+  const validateTimes = () => {
+    if (!startTime || !endTime) return true;
+    return timeToMinutes(endTime) > timeToMinutes(startTime);
   };
 
   const generateRecurringEvents = (baseEvent) => {
@@ -80,10 +125,11 @@ const EventModal = () => {
 
   useEffect(() => {
     if (isEditing) {
-      const { title, date, time, description, recurrence, color } = selectedEvent;
+      const { title, date, startTime, endTime, description, recurrence, color } = selectedEvent;
       setTitle(title);
       setDate(date);
-      setTime(time);
+      setStartTime(startTime || selectedEvent.time);
+      setEndTime(endTime || "");
       setDescription(description);
       setRecurrence(recurrence);
       setColor(color);
@@ -94,12 +140,32 @@ const EventModal = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title || !time || !date) {
+
+    if (!title || !startTime || !endTime || !date) {
       toast.error("Missing required fields");
       return;
     }
 
-    const baseEvent = { title, date, time, description, recurrence, color };
+    if (!validateTimes()) {
+      toast.error("End time must be after start time");
+      return;
+    }
+
+    if (conflicts.length > 0) {
+      toast.error(`Conflict detected with ${conflicts.length} existing event(s)!`);
+      return;
+    }
+
+    const baseEvent = {
+      title,
+      date,
+      startTime,
+      endTime,
+      time: startTime,
+      description,
+      recurrence,
+      color,
+    };
 
     try {
       if (isEditing) {
@@ -109,6 +175,17 @@ const EventModal = () => {
         setIsViewModalOpen(false);
       } else {
         const newEvents = generateRecurringEvents(baseEvent);
+
+        const hasConflicts = newEvents.some((event) => {
+          const eventConflicts = checkConflicts(event.date, event.startTime, event.endTime);
+          return eventConflicts.length > 0;
+        });
+
+        if (hasConflicts) {
+          toast.error("Some recurring events conflict with existing events");
+          return;
+        }
+
         newEvents.forEach(addEvent);
         toast.success("Event created successfully");
       }
@@ -122,29 +199,86 @@ const EventModal = () => {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-      <div className="w-full max-w-xl rounded-2xl bg-base-100 p-6 shadow-lg">
+      <div className="w-full max-w-xl rounded-2xl bg-base-100 p-6 shadow-lg max-h-[90vh] overflow-y-auto">
         <h2 className="mb-4 text-xl font-semibold">{isEditing ? "Edit Event" : "Create Event"}</h2>
+
+        {conflicts.length > 0 && (
+          <div className="alert alert-warning mb-4">
+            <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.728-.833-2.498 0L4.346 15.5c-.77.833.192 2.5 1.732 2.5z"
+              />
+            </svg>
+            <div>
+              <h3 className="font-bold">Time Conflict Detected!</h3>
+              <div className="text-xs">
+                {conflicts.map((conflict, idx) => (
+                  <div key={idx}>
+                    • {conflict.title} ({conflict.startTime} - {conflict.endTime})
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} className="space-y-5">
           <div className="form-control">
             <input type="text" placeholder="Add title" className="input input-bordered w-full text-lg" value={title} onChange={(e) => setTitle(e.target.value)} required />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
+          <div className="form-control">
             <input type="date" className="input input-bordered" value={date} onChange={(e) => setDate(e.target.value)} required />
-            <select className="select select-bordered cursor-pointer" value={time} onChange={(e) => setTime(e.target.value)} required>
-              <option value="" disabled>
-                Select Time
-              </option>
-              {generateTimeSlots().map((slot) => (
-                <option key={slot} value={slot}>
-                  {slot}
-                </option>
-              ))}
-            </select>
           </div>
 
+          <div className="grid grid-cols-2 gap-4">
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">Start Time</span>
+              </label>
+              <select className="select select-bordered cursor-pointer" value={startTime} onChange={(e) => setStartTime(e.target.value)} required>
+                <option value="" disabled>
+                  Select Start Time
+                </option>
+                {generateTimeSlots().map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text">End Time</span>
+              </label>
+              <select className="select select-bordered cursor-pointer" value={endTime} onChange={(e) => setEndTime(e.target.value)} required>
+                <option value="" disabled>
+                  Select End Time
+                </option>
+                {generateTimeSlots().map((slot) => (
+                  <option key={slot} value={slot}>
+                    {slot}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {startTime && endTime && !validateTimes() && (
+            <div className="alert alert-error">
+              <svg xmlns="http://www.w3.org/2000/svg" className="stroke-current shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <span>End time must be after start time</span>
+            </div>
+          )}
+
           <div className="form-control">
-            <textarea className="textarea textarea-bordered" placeholder="Add description" value={description} onChange={(e) => setDescription(e.target.value)}></textarea>
+            <textarea className="textarea textarea-bordered" placeholder="Add description" value={description} onChange={(e) => setDescription(e.target.value)} />
           </div>
 
           <div className="form-control">
@@ -238,7 +372,7 @@ const EventModal = () => {
             >
               Cancel
             </button>
-            <button type="submit" className="btn btn-primary">
+            <button type="submit" className={`btn btn-primary ${conflicts.length > 0 ? "btn-disabled" : ""}`} disabled={conflicts.length > 0 || !validateTimes()}>
               Save
             </button>
           </div>

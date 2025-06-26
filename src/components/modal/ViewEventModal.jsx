@@ -14,7 +14,7 @@ const ViewEventModal = () => {
 
   if (!isViewModalOpen || !selectedEvent) return null;
 
-  const { title, date, time, description, recurrence, color } = selectedEvent;
+  const { title, date, startTime, endTime, description, recurrence, color } = selectedEvent;
 
   const handleEdit = () => {
     setIsViewModalOpen(false);
@@ -54,7 +54,7 @@ const ViewEventModal = () => {
           <div>
             <p className="text-gray-400">Date & Time</p>
             <p>
-              {date} at {time}
+              {date} | {startTime} - {endTime}
             </p>
           </div>
           <div>
