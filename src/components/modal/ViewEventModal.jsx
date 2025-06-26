@@ -1,4 +1,5 @@
 import { useCalendar } from "../../contexts/CalendarContext";
+import toast from "react-hot-toast";
 
 const COLOR_MAP = {
   default: "bg-gray-400",
@@ -25,9 +26,14 @@ const ViewEventModal = () => {
     const confirmDelete = confirm("Are you sure you want to delete this event?");
     if (!confirmDelete) return;
 
-    setEvents(events.filter((e) => e !== selectedEvent));
-    setIsViewModalOpen(false);
-    setSelectedEvent(null);
+    try {
+      setEvents(events.filter((e) => e !== selectedEvent));
+      setIsViewModalOpen(false);
+      setSelectedEvent(null);
+      toast.success("Event deleted successfully");
+    } catch (err) {
+      toast.error("Failed to delete event");
+    }
   };
 
   return (

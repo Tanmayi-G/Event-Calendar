@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useCalendar } from "../../contexts/CalendarContext";
 import { format } from "date-fns";
+import toast from "react-hot-toast";
 
 const COLOR_OPTIONS = [
   { label: "Default", value: "default", bg: "bg-gray-400" },
@@ -51,19 +52,27 @@ const EventModal = () => {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!title || !time || !date) return;
+    if (!title || !time || !date) {
+      toast.error("Missing required fields");
+      return;
+    }
 
     const newEvent = { title, date, time, description, recurrence, color };
 
-    if (isEditing) {
-      setEvents(events.map((event) => (event === selectedEvent ? newEvent : event)));
-      setSelectedEvent(null);
-      setIsViewModalOpen(false);
-    } else {
-      addEvent(newEvent);
+    try {
+      if (isEditing) {
+        setEvents(events.map((event) => (event === selectedEvent ? newEvent : event)));
+        toast.success("Event edited successfully");
+        setSelectedEvent(null);
+        setIsViewModalOpen(false);
+      } else {
+        addEvent(newEvent);
+        toast.success("Event created successfully");
+      }
+      setIsModalOpen(false);
+    } catch (err) {
+      toast.error("Something went wrong");
     }
-
-    setIsModalOpen(false);
   };
 
   if (!selectedDate && !selectedEvent) return null;

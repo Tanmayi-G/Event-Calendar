@@ -3,6 +3,7 @@ import MainView from "./components/main/MainView";
 import EventModal from "./components/modal/EventModal";
 import ViewEventModal from "./components/modal/ViewEventModal";
 import { useCalendar } from "./contexts/CalendarContext";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const { isModalOpen, isViewModalOpen } = useCalendar();
@@ -13,6 +14,7 @@ function App() {
       <MainView />
       {isModalOpen && <EventModal />}
       {isViewModalOpen && <ViewEventModal />}
+      <Toaster position="top-right" />
     </div>
   );
 }
