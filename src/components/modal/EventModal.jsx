@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCalendar } from "../../contexts/CalendarContext";
-import { format } from "date-fns";
+import { format, addDays, addWeeks, addMonths } from "date-fns";
 import toast from "react-hot-toast";
 
 const COLOR_OPTIONS = [
@@ -22,6 +22,9 @@ const EventModal = () => {
   const [description, setDescription] = useState("");
   const [recurrence, setRecurrence] = useState("none");
   const [color, setColor] = useState("default");
+  const [customInterval, setCustomInterval] = useState(1);
+  const [weeklyDays, setWeeklyDays] = useState([]);
+  const [endDate, setEndDate] = useState("");
 
   const generateTimeSlots = () => {
     const slots = [];
@@ -34,6 +37,45 @@ const EventModal = () => {
       }
     }
     return slots;
+  };
+
+  const generateRecurringEvents = (baseEvent) => {
+    const events = [baseEvent];
+    const start = new Date(baseEvent.date);
+    const limit = endDate ? new Date(endDate) : null;
+
+    if (recurrence === "daily") {
+      for (let i = 1; i < 365; i++) {
+        const nextDate = addDays(start, i);
+        if (limit && nextDate > limit) break;
+        events.push({ ...baseEvent, date: format(nextDate, "yyyy-MM-dd") });
+      }
+    } else if (recurrence === "weekly") {
+      const selectedDays = weeklyDays.length ? weeklyDays.map(Number) : [start.getDay()];
+      for (let week = 0; week < 52; week++) {
+        selectedDays.forEach((dow) => {
+          const next = new Date(start);
+          next.setDate(start.getDate() + 7 * week + dow - start.getDay());
+          if (next > start && (!limit || next <= limit)) {
+            events.push({ ...baseEvent, date: format(next, "yyyy-MM-dd") });
+          }
+        });
+      }
+    } else if (recurrence === "monthly") {
+      for (let i = 1; i < 24; i++) {
+        const nextDate = addMonths(start, i);
+        if (limit && nextDate > limit) break;
+        events.push({ ...baseEvent, date: format(nextDate, "yyyy-MM-dd") });
+      }
+    } else if (recurrence === "custom") {
+      for (let i = 1; i < 100; i++) {
+        const nextDate = addWeeks(start, i * customInterval);
+        if (limit && nextDate > limit) break;
+        events.push({ ...baseEvent, date: format(nextDate, "yyyy-MM-dd") });
+      }
+    }
+
+    return events;
   };
 
   useEffect(() => {
@@ -57,16 +99,17 @@ const EventModal = () => {
       return;
     }
 
-    const newEvent = { title, date, time, description, recurrence, color };
+    const baseEvent = { title, date, time, description, recurrence, color };
 
     try {
       if (isEditing) {
-        setEvents(events.map((event) => (event === selectedEvent ? newEvent : event)));
+        setEvents(events.map((event) => (event === selectedEvent ? baseEvent : event)));
         toast.success("Event edited successfully");
         setSelectedEvent(null);
         setIsViewModalOpen(false);
       } else {
-        addEvent(newEvent);
+        const newEvents = generateRecurringEvents(baseEvent);
+        newEvents.forEach(addEvent);
         toast.success("Event created successfully");
       }
       setIsModalOpen(false);
@@ -116,6 +159,52 @@ const EventModal = () => {
               <option value="custom">Custom</option>
             </select>
           </div>
+
+          {recurrence !== "none" && (
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text mr-2">End date for recurrence</span>
+              </label>
+              <input type="date" className="input input-bordered" value={endDate} min={date} onChange={(e) => setEndDate(e.target.value)} required />
+            </div>
+          )}
+
+          {recurrence === "weekly" && (
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text mb-2">Repeat on</span>
+              </label>
+              <div className="flex gap-2 flex-wrap">
+                {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((day, idx) => (
+                  <label key={day} className="cursor-pointer label gap-1">
+                    <input
+                      type="checkbox"
+                      checked={weeklyDays.includes(String(idx))}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setWeeklyDays([...weeklyDays, String(idx)]);
+                        } else {
+                          setWeeklyDays(weeklyDays.filter((d) => d !== String(idx)));
+                        }
+                      }}
+                      className="checkbox"
+                    />
+                    <span className="label-text">{day}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {recurrence === "custom" && (
+            <div className="form-control">
+              <label className="label">
+                <span className="label-text mr-3">Repeat every</span>
+              </label>
+              <input type="number" min="1" className="input input-bordered w-20" value={customInterval} onChange={(e) => setCustomInterval(Number(e.target.value))} />
+              <span className="text-sm mt-1 text-gray-500 ml-2">week(s)</span>
+            </div>
+          )}
 
           <div className="form-control">
             <label className="label">
