@@ -4,7 +4,7 @@ A fully-featured interactive calendar application built with React. This calenda
 
 ## 🚀 Live Demo
 
-[Click here to view the live demo](https://event-calendar-fxtxe5pd4-tanmayi-gs-projects.vercel.app/)
+[Click here to view the live demo](https://event-calendar-teal.vercel.app/)
 
 ---
 
