@@ -10,7 +10,7 @@ const COLOR_MAP = {
 };
 
 const ViewEventModal = () => {
-  const { isViewModalOpen, setIsViewModalOpen, selectedEvent, setIsModalOpen, setSelectedEvent, setSelectedDate, setEvents, events } = useCalendar();
+  const { isViewModalOpen, setIsViewModalOpen, selectedEvent, setIsModalOpen, setSelectedEvent, setSelectedDate, setEvents, events, searchQuery } = useCalendar();
 
   if (!isViewModalOpen || !selectedEvent) return null;
 
@@ -36,6 +36,21 @@ const ViewEventModal = () => {
     }
   };
 
+  const highlightText = (text, query) => {
+    if (!query || !text) return text;
+
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return parts.map((part, index) =>
+      part.toLowerCase() === query.toLowerCase() ? (
+        <mark key={index} className="bg-yellow-200 text-yellow-800 px-1 rounded">
+          {part}
+        </mark>
+      ) : (
+        part
+      )
+    );
+  };
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
       <div className="w-full max-w-md rounded-2xl bg-base-100 p-6 shadow-xl">
@@ -49,7 +64,7 @@ const ViewEventModal = () => {
         <div className="space-y-3 text-sm">
           <div>
             <p className="text-gray-400">Title</p>
-            <p className="text-base font-medium">{title}</p>
+            <p className="text-base font-medium">{highlightText(title, searchQuery)}</p>
           </div>
           <div>
             <p className="text-gray-400">Date & Time</p>
@@ -59,7 +74,7 @@ const ViewEventModal = () => {
           </div>
           <div>
             <p className="text-gray-400">Description</p>
-            <p className="whitespace-pre-wrap">{description || "—"}</p>
+            <p className="whitespace-pre-wrap">{description ? highlightText(description, searchQuery) : "—"}</p>
           </div>
           <div>
             <p className="text-gray-400">Recurrence</p>

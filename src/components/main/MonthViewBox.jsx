@@ -56,7 +56,7 @@ export default function MonthViewBox({ day, rowIndex }) {
   const today = new Date();
   const isToday = isSameDay(day, today);
   const isFirst = format(day, "d") === "1";
-  const { setIsModalOpen, setSelectedDate, events, setSelectedEvent, setIsViewModalOpen, setEvents } = useCalendar();
+  const { setIsModalOpen, setSelectedDate, filteredEvents, searchQuery, setSelectedEvent, setIsViewModalOpen, setEvents } = useCalendar();
   const [showAll, setShowAll] = useState(false);
 
   const timeToMinutes = (timeStr) => {
@@ -77,7 +77,7 @@ export default function MonthViewBox({ day, rowIndex }) {
     const eventStart = timeToMinutes(eventStartTime);
     const eventEnd = timeToMinutes(eventEndTime);
 
-    const conflictingEvents = events.filter((event) => {
+    const conflictingEvents = filteredEvents.filter((event) => {
       const eventId = event.id || `${event.title}-${event.date}-${event.startTime}`;
       if (excludeEventId && eventId === excludeEventId) return false;
       if (event.date !== targetDate) return false;
@@ -181,7 +181,7 @@ export default function MonthViewBox({ day, rowIndex }) {
   };
 
   const dayString = format(day, "yyyy-MM-dd");
-  const eventsForDay = events.filter((event) => event.date === dayString);
+  const eventsForDay = filteredEvents.filter((event) => event.date === dayString);
   const displayedEvents = showAll ? eventsForDay : eventsForDay.slice(0, 2);
 
   return (

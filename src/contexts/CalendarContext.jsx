@@ -25,9 +25,21 @@ export const CalendarProvider = ({ children }) => {
   const [selectedEvent, setSelectedEvent] = useState(null);
   const [isViewModalOpen, setIsViewModalOpen] = useState(false);
 
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filteredEvents, setFilteredEvents] = useState(events);
+
   useEffect(() => {
     localStorage.setItem("calendar-events", JSON.stringify(events));
   }, [events]);
+
+  useEffect(() => {
+    if (searchQuery.trim() === "") {
+      setFilteredEvents(events);
+    } else {
+      const filtered = events.filter((event) => event.title.toLowerCase().includes(searchQuery.toLowerCase()) || event.description?.toLowerCase().includes(searchQuery.toLowerCase()));
+      setFilteredEvents(filtered);
+    }
+  }, [searchQuery, events]);
 
   const addEvent = (event) => {
     setEvents((prev) => [...prev, event]);
@@ -51,6 +63,10 @@ export const CalendarProvider = ({ children }) => {
         setSelectedEvent,
         isViewModalOpen,
         setIsViewModalOpen,
+        searchQuery,
+        setSearchQuery,
+        filteredEvents,
+        setFilteredEvents,
       }}
     >
       {children}
