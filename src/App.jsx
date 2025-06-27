@@ -1,5 +1,5 @@
 import Header from "./components/Header";
-import MainView from "./components/main/MainView";
+import MainView from "./components/views/MainView";
 import EventModal from "./components/modal/EventModal";
 import ViewEventModal from "./components/modal/ViewEventModal";
 import { useCalendar } from "./contexts/CalendarContext";

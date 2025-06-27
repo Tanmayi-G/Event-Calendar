@@ -1,7 +1,7 @@
 import Sidebar from "../sidebar/Sidebar";
-import MonthView from "./MonthView";
-import WeekView from "./WeekView";
-import DayView from "./DayView";
+import MonthView from "./monthView/MonthView";
+import WeekView from "./weekView/WeekView";
+import DayView from "./dayView/DayView";
 import { useCalendar } from "../../contexts/CalendarContext";
 
 const MainView = () => {

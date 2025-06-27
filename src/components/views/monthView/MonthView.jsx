@@ -1,7 +1,7 @@
 import { Fragment } from "react";
-import { getMonth } from "../../../utils/getTime";
+import { getMonth } from "../../../../utils/getTime";
 import MonthViewBox from "./MonthViewBox";
-import { useCalendar } from "../../contexts/CalendarContext";
+import { useCalendar } from "../../../contexts/CalendarContext";
 import { DndProvider } from "react-dnd";
 import { HTML5Backend } from "react-dnd-html5-backend";
 

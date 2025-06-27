@@ -1,202 +1,44 @@
-import { useState, useEffect } from "react";
-import { useCalendar } from "../../contexts/CalendarContext";
-import { format, addDays, addWeeks, addMonths, parse, isAfter, isBefore, addYears } from "date-fns";
+import { COLOR_OPTIONS } from "./constants";
 import toast from "react-hot-toast";
-
-const COLOR_OPTIONS = [
-  { label: "Default", value: "default", bg: "bg-gray-400" },
-  { label: "Blue", value: "blue", bg: "bg-blue-500" },
-  { label: "Green", value: "green", bg: "bg-green-500" },
-  { label: "Red", value: "red", bg: "bg-red-500" },
-  { label: "Yellow", value: "yellow", bg: "bg-yellow-400" },
-];
-
-const generateEventId = () => {
-  return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-};
+import useEventModal from "../../hooks/useEventModal";
 
 const EventModal = () => {
-  const { selectedDate, setIsModalOpen, addEvent, selectedEvent, setSelectedEvent, setIsViewModalOpen, setEvents, events } = useCalendar();
-
-  const isEditing = !!selectedEvent;
-
-  const [title, setTitle] = useState("");
-  const [date, setDate] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [description, setDescription] = useState("");
-  const [recurrence, setRecurrence] = useState("none");
-  const [color, setColor] = useState("default");
-  const [customInterval, setCustomInterval] = useState(1);
-  const [weeklyDays, setWeeklyDays] = useState([]);
-  const [endDate, setEndDate] = useState("");
-  const [conflicts, setConflicts] = useState([]);
-
-  const generateTimeSlots = () => {
-    const slots = [];
-    for (let h = 0; h < 24; h++) {
-      for (let m = 0; m < 60; m += 30) {
-        const hour = h % 12 === 0 ? 12 : h % 12;
-        const minute = m.toString().padStart(2, "0");
-        const ampm = h < 12 ? "AM" : "PM";
-        slots.push(`${hour}:${minute} ${ampm}`);
-      }
-    }
-    return slots;
-  };
-
-  const timeToMinutes = (timeStr) => {
-    const [time, ampm] = timeStr.split(" ");
-    const [hours, minutes] = time.split(":").map(Number);
-    let totalHours = hours;
-
-    if (ampm === "PM" && hours !== 12) totalHours += 12;
-    if (ampm === "AM" && hours === 12) totalHours = 0;
-
-    return totalHours * 60 + minutes;
-  };
-
-  const checkConflicts = (eventDate, eventStartTime, eventEndTime, excludeEvent = null) => {
-    const eventStart = timeToMinutes(eventStartTime);
-    const eventEnd = timeToMinutes(eventEndTime);
-
-    const conflictingEvents = events.filter((event) => {
-      if (excludeEvent && event === excludeEvent) return false;
-
-      if (event.date !== eventDate) return false;
-
-      const existingStart = timeToMinutes(event.startTime);
-      const existingEnd = timeToMinutes(event.endTime);
-
-      return eventStart < existingEnd && eventEnd > existingStart;
-    });
-
-    return conflictingEvents;
-  };
-
-  const getDefaultEndDate = (startDate, recurrenceType) => {
-    const start = new Date(startDate);
-    switch (recurrenceType) {
-      case "daily":
-        return format(addMonths(start, 3), "yyyy-MM-dd"); // 3 months for daily
-      case "weekly":
-        return format(addMonths(start, 6), "yyyy-MM-dd"); // 6 months for weekly
-      case "monthly":
-        return format(addYears(start, 1), "yyyy-MM-dd"); // 1 year for monthly
-      case "custom":
-        return format(addMonths(start, 6), "yyyy-MM-dd"); // 6 months for custom
-      default:
-        return format(addMonths(start, 6), "yyyy-MM-dd");
-    }
-  };
-
-  useEffect(() => {
-    if (date && startTime && endTime) {
-      const conflictingEvents = checkConflicts(date, startTime, endTime, isEditing ? selectedEvent : null);
-      setConflicts(conflictingEvents);
-    } else {
-      setConflicts([]);
-    }
-  }, [date, startTime, endTime, events, isEditing, selectedEvent]);
-
-  useEffect(() => {
-    if (recurrence !== "none" && date && !endDate) {
-      setEndDate(getDefaultEndDate(date, recurrence));
-    }
-  }, [recurrence, date, endDate]);
-
-  const validateTimes = () => {
-    if (!startTime || !endTime) return true;
-    return timeToMinutes(endTime) > timeToMinutes(startTime);
-  };
-
-  const generateRecurringEvents = (baseEvent) => {
-    const events = [baseEvent];
-    const start = new Date(baseEvent.date);
-    const limit = endDate ? new Date(endDate) : null;
-
-    if (recurrence === "daily") {
-      for (let i = 1; i < 365; i++) {
-        const nextDate = addDays(start, i);
-        if (limit && nextDate > limit) break;
-        events.push({
-          ...baseEvent,
-          date: format(nextDate, "yyyy-MM-dd"),
-          id: generateEventId(),
-        });
-      }
-    } else if (recurrence === "weekly") {
-      const selectedDays = weeklyDays.length ? weeklyDays.map(Number) : [start.getDay()];
-      for (let week = 0; week < 52; week++) {
-        selectedDays.forEach((dow) => {
-          const next = new Date(start);
-          next.setDate(start.getDate() + 7 * week + dow - start.getDay());
-          if (next > start && (!limit || next <= limit)) {
-            events.push({
-              ...baseEvent,
-              date: format(next, "yyyy-MM-dd"),
-              id: generateEventId(),
-            });
-          }
-        });
-      }
-    } else if (recurrence === "monthly") {
-      for (let i = 1; i < 24; i++) {
-        const nextDate = addMonths(start, i);
-        if (limit && nextDate > limit) break;
-        events.push({
-          ...baseEvent,
-          date: format(nextDate, "yyyy-MM-dd"),
-          id: generateEventId(),
-        });
-      }
-    } else if (recurrence === "custom") {
-      for (let i = 1; i < 100; i++) {
-        const nextDate = addWeeks(start, i * customInterval);
-        if (limit && nextDate > limit) break;
-        events.push({
-          ...baseEvent,
-          date: format(nextDate, "yyyy-MM-dd"),
-          id: generateEventId(),
-        });
-      }
-    }
-
-    return events;
-  };
-
-  useEffect(() => {
-    if (isEditing) {
-      const { title, date, startTime, endTime, description, recurrence, color, endDate: eventEndDate, customInterval: eventCustomInterval, weeklyDays: eventWeeklyDays } = selectedEvent;
-      setTitle(title);
-      setDate(date);
-      setStartTime(startTime || selectedEvent.time);
-      setEndTime(endTime || "");
-      setDescription(description);
-      setRecurrence(recurrence || "none");
-      setColor(color || "default");
-
-      if (recurrence && recurrence !== "none") {
-        setEndDate(eventEndDate || getDefaultEndDate(date, recurrence));
-      } else {
-        setEndDate("");
-      }
-
-      setCustomInterval(eventCustomInterval || 1);
-      setWeeklyDays(eventWeeklyDays || []);
-    } else if (selectedDate) {
-      setDate(format(selectedDate, "yyyy-MM-dd"));
-      setTitle("");
-      setStartTime("");
-      setEndTime("");
-      setDescription("");
-      setRecurrence("none");
-      setColor("default");
-      setCustomInterval(1);
-      setWeeklyDays([]);
-      setEndDate("");
-    }
-  }, [isEditing, selectedDate, selectedEvent]);
+  const {
+    title,
+    date,
+    startTime,
+    endTime,
+    description,
+    recurrence,
+    color,
+    customInterval,
+    weeklyDays,
+    endDate,
+    conflicts,
+    setTitle,
+    setDate,
+    setStartTime,
+    setEndTime,
+    setDescription,
+    setRecurrence,
+    setColor,
+    setCustomInterval,
+    setWeeklyDays,
+    setEndDate,
+    generateTimeSlots,
+    validateTimes,
+    generateRecurringEvents,
+    checkConflicts,
+    isEditing,
+    selectedEvent,
+    selectedDate,
+    setIsModalOpen,
+    setEvents,
+    events,
+    addEvent,
+    setSelectedEvent,
+    setIsViewModalOpen,
+  } = useEventModal();
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -222,7 +64,7 @@ const EventModal = () => {
     }
 
     const baseEvent = {
-      id: isEditing ? selectedEvent.id : generateEventId(),
+      id: isEditing ? selectedEvent.id : `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       title,
       date,
       startTime,
@@ -244,11 +86,7 @@ const EventModal = () => {
         setIsViewModalOpen(false);
       } else {
         const newEvents = generateRecurringEvents(baseEvent);
-
-        const hasConflicts = newEvents.some((event) => {
-          const eventConflicts = checkConflicts(event.date, event.startTime, event.endTime);
-          return eventConflicts.length > 0;
-        });
+        const hasConflicts = newEvents.some((event) => checkConflicts(event.date, event.startTime, event.endTime).length > 0);
 
         if (hasConflicts) {
           toast.error("Some recurring events conflict with existing events");

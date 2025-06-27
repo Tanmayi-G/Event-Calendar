@@ -1,65 +1,25 @@
 import { Menu, CalendarDays, ChevronLeft, ChevronRight, Search, X } from "lucide-react";
-import { useCalendar } from "../contexts/CalendarContext";
-import { format, startOfToday, addMonths, subMonths, addWeeks, subWeeks, addDays, subDays } from "date-fns";
-import { useState, useEffect, useRef } from "react";
+import { useHeaderLogic } from "../hooks/useHeaderLogic";
 
 const Header = () => {
-  const { currentDate, setCurrentDate, viewMode, setViewMode, events, searchQuery, setSearchQuery, filteredEvents, setIsSidebarOpen, isSidebarOpen } = useCalendar();
-
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchResults, setSearchResults] = useState([]);
-  const searchInputRef = useRef(null);
-
-  const handleToday = () => setCurrentDate(startOfToday());
-
-  const handlePrev = () => {
-    if (viewMode === "month") setCurrentDate(subMonths(currentDate, 1));
-    else if (viewMode === "week") setCurrentDate(subWeeks(currentDate, 1));
-    else if (viewMode === "day") setCurrentDate(subDays(currentDate, 1));
-  };
-
-  const handleNext = () => {
-    if (viewMode === "month") setCurrentDate(addMonths(currentDate, 1));
-    else if (viewMode === "week") setCurrentDate(addWeeks(currentDate, 1));
-    else if (viewMode === "day") setCurrentDate(addDays(currentDate, 1));
-  };
-
-  useEffect(() => {
-    if (searchQuery.trim() === "") {
-      setSearchResults([]);
-    } else {
-      const filtered = events.filter((event) => event.title.toLowerCase().includes(searchQuery.toLowerCase()) || event.description?.toLowerCase().includes(searchQuery.toLowerCase()));
-      setSearchResults(filtered);
-    }
-  }, [searchQuery, events]);
-
-  useEffect(() => {
-    if (isSearchOpen && searchInputRef.current) {
-      searchInputRef.current.focus();
-    }
-  }, [isSearchOpen]);
-
-  const handleSearchToggle = () => {
-    setIsSearchOpen(!isSearchOpen);
-    if (isSearchOpen) {
-      setSearchQuery("");
-    }
-  };
-
-  const handleSearchChange = (e) => {
-    setSearchQuery(e.target.value);
-  };
-
-  const handleSearchResultClick = (event) => {
-    setCurrentDate(new Date(event.date));
-    setIsSearchOpen(false);
-    setSearchQuery("");
-  };
-
-  const clearSearch = () => {
-    setSearchQuery("");
-    setIsSearchOpen(false);
-  };
+  const {
+    isSidebarOpen,
+    setIsSidebarOpen,
+    isSearchOpen,
+    searchQuery,
+    searchInputRef,
+    searchResults,
+    formattedDate,
+    viewMode,
+    handleToday,
+    handleDateChange,
+    handleSearchToggle,
+    clearSearch,
+    handleSearchChange,
+    handleSearchResultClick,
+    setViewMode,
+    getColorClass,
+  } = useHeaderLogic();
 
   return (
     <div className="mx-3 py-4 flex justify-between items-center relative">
@@ -77,11 +37,11 @@ const Header = () => {
         </button>
 
         <div className="flex items-center gap-3">
-          <ChevronLeft className="cursor-pointer hover:bg-base-200 rounded p-1" onClick={handlePrev} />
-          <ChevronRight className="cursor-pointer hover:bg-base-200 rounded p-1" onClick={handleNext} />
+          <ChevronLeft className="cursor-pointer hover:bg-base-200 rounded p-1" onClick={() => handleDateChange("prev")} />
+          <ChevronRight className="cursor-pointer hover:bg-base-200 rounded p-1" onClick={() => handleDateChange("next")} />
         </div>
 
-        <h1 className="hidden text-lg lg:block">{format(currentDate, viewMode === "day" ? "EEEE, MMMM d yyyy" : viewMode === "week" ? "wo 'week of' MMMM yyyy" : "MMMM yyyy")}</h1>
+        <h1 className="hidden text-lg lg:block">{formattedDate}</h1>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -99,12 +59,8 @@ const Header = () => {
                   placeholder="Search events..."
                   value={searchQuery}
                   onChange={handleSearchChange}
+                  onKeyDown={(e) => e.key === "Escape" && clearSearch()}
                   className="input input-bordered w-64 pr-8"
-                  onKeyDown={(e) => {
-                    if (e.key === "Escape") {
-                      clearSearch();
-                    }
-                  }}
                 />
                 {searchQuery && (
                   <button onClick={clearSearch} className="absolute right-2 top-1/2 transform -translate-y-1/2 btn btn-ghost btn-xs btn-circle">
@@ -131,23 +87,11 @@ const Header = () => {
                         <div className="flex-1">
                           <h4 className="font-semibold text-base-content">{event.title}</h4>
                           <p className="text-sm text-gray-500">
-                            {format(new Date(event.date), "MMM d, yyyy")} • {event.startTime} - {event.endTime}
+                            {event.date && `${event.date}`} • {event.startTime} - {event.endTime}
                           </p>
                           {event.description && <p className="text-sm text-gray-400 mt-1 line-clamp-2">{event.description}</p>}
                         </div>
-                        <div
-                          className={`w-3 h-3 rounded-full ml-3 ${
-                            event.color === "blue"
-                              ? "bg-blue-500"
-                              : event.color === "green"
-                              ? "bg-green-500"
-                              : event.color === "red"
-                              ? "bg-red-500"
-                              : event.color === "yellow"
-                              ? "bg-yellow-400"
-                              : "bg-gray-400"
-                          }`}
-                        />
+                        <div className={`w-3 h-3 rounded-full ml-3 ${getColorClass(event.color)}`} />
                       </div>
                     </div>
                   ))}
