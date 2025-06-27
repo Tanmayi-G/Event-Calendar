@@ -10,11 +10,16 @@ A fully-featured interactive calendar application built with React. This calenda
 
 ## 📌 Features
 
-### ✅ Monthly View
+### ✅ Multiple Calendar Views
 
-- Displays a traditional monthly calendar grid.
-- Highlights the current day.
-- Allows navigation between months.
+- **📆 Monthly View**  
+  Traditional calendar grid that highlights the current day and allows navigation between months.
+
+- **🗓️ Weekly View**  
+  Displays events in a week-by-week layout with hourly time slots.
+
+- **📅 Daily View**  
+  Focused view for a single day’s schedule, perfect for managing busy days.
 
 ### 📝 Event Management
 
@@ -44,7 +49,7 @@ A fully-featured interactive calendar application built with React. This calenda
 ### 🔍 Event Filtering & Search
 
 - Filter by category.
-- Search events by title or description in real-time.
+- Search events by title in real-time.
 
 ### 💾 Persistence
 
@@ -74,8 +79,8 @@ A fully-featured interactive calendar application built with React. This calenda
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/event-calendar.git
-cd event-calendar
+git clone https://github.com/Tanmayi-G/Event-Calendar.git
+cd Event-Calendar
 
 # Install dependencies
 npm install
