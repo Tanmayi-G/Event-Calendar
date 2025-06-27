@@ -11,6 +11,10 @@ const COLOR_OPTIONS = [
   { label: "Yellow", value: "yellow", bg: "bg-yellow-400" },
 ];
 
+const generateEventId = () => {
+  return `event_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+};
+
 const EventModal = () => {
   const { selectedDate, setIsModalOpen, addEvent, selectedEvent, setSelectedEvent, setIsViewModalOpen, setEvents, events } = useCalendar();
 
@@ -93,7 +97,11 @@ const EventModal = () => {
       for (let i = 1; i < 365; i++) {
         const nextDate = addDays(start, i);
         if (limit && nextDate > limit) break;
-        events.push({ ...baseEvent, date: format(nextDate, "yyyy-MM-dd") });
+        events.push({
+          ...baseEvent,
+          date: format(nextDate, "yyyy-MM-dd"),
+          id: generateEventId(),
+        });
       }
     } else if (recurrence === "weekly") {
       const selectedDays = weeklyDays.length ? weeklyDays.map(Number) : [start.getDay()];
@@ -102,7 +110,11 @@ const EventModal = () => {
           const next = new Date(start);
           next.setDate(start.getDate() + 7 * week + dow - start.getDay());
           if (next > start && (!limit || next <= limit)) {
-            events.push({ ...baseEvent, date: format(next, "yyyy-MM-dd") });
+            events.push({
+              ...baseEvent,
+              date: format(next, "yyyy-MM-dd"),
+              id: generateEventId(),
+            });
           }
         });
       }
@@ -110,13 +122,21 @@ const EventModal = () => {
       for (let i = 1; i < 24; i++) {
         const nextDate = addMonths(start, i);
         if (limit && nextDate > limit) break;
-        events.push({ ...baseEvent, date: format(nextDate, "yyyy-MM-dd") });
+        events.push({
+          ...baseEvent,
+          date: format(nextDate, "yyyy-MM-dd"),
+          id: generateEventId(),
+        });
       }
     } else if (recurrence === "custom") {
       for (let i = 1; i < 100; i++) {
         const nextDate = addWeeks(start, i * customInterval);
         if (limit && nextDate > limit) break;
-        events.push({ ...baseEvent, date: format(nextDate, "yyyy-MM-dd") });
+        events.push({
+          ...baseEvent,
+          date: format(nextDate, "yyyy-MM-dd"),
+          id: generateEventId(),
+        });
       }
     }
 
@@ -157,6 +177,7 @@ const EventModal = () => {
     }
 
     const baseEvent = {
+      id: isEditing ? selectedEvent.id : generateEventId(),
       title,
       date,
       startTime,
@@ -187,7 +208,7 @@ const EventModal = () => {
         }
 
         newEvents.forEach(addEvent);
-        toast.success("Event created successfully");
+        toast.success(newEvents.length === 1 ? "Event created successfully" : `${newEvents.length} recurring events created successfully`);
       }
       setIsModalOpen(false);
     } catch (err) {
