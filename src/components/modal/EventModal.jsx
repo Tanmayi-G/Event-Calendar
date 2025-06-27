@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { useCalendar } from "../../contexts/CalendarContext";
-import { format, addDays, addWeeks, addMonths, parse, isAfter, isBefore } from "date-fns";
+import { format, addDays, addWeeks, addMonths, parse, isAfter, isBefore, addYears } from "date-fns";
 import toast from "react-hot-toast";
 
 const COLOR_OPTIONS = [
@@ -74,6 +74,22 @@ const EventModal = () => {
     return conflictingEvents;
   };
 
+  const getDefaultEndDate = (startDate, recurrenceType) => {
+    const start = new Date(startDate);
+    switch (recurrenceType) {
+      case "daily":
+        return format(addMonths(start, 3), "yyyy-MM-dd"); // 3 months for daily
+      case "weekly":
+        return format(addMonths(start, 6), "yyyy-MM-dd"); // 6 months for weekly
+      case "monthly":
+        return format(addYears(start, 1), "yyyy-MM-dd"); // 1 year for monthly
+      case "custom":
+        return format(addMonths(start, 6), "yyyy-MM-dd"); // 6 months for custom
+      default:
+        return format(addMonths(start, 6), "yyyy-MM-dd");
+    }
+  };
+
   useEffect(() => {
     if (date && startTime && endTime) {
       const conflictingEvents = checkConflicts(date, startTime, endTime, isEditing ? selectedEvent : null);
@@ -82,6 +98,12 @@ const EventModal = () => {
       setConflicts([]);
     }
   }, [date, startTime, endTime, events, isEditing, selectedEvent]);
+
+  useEffect(() => {
+    if (recurrence !== "none" && date && !endDate) {
+      setEndDate(getDefaultEndDate(date, recurrence));
+    }
+  }, [recurrence, date, endDate]);
 
   const validateTimes = () => {
     if (!startTime || !endTime) return true;
@@ -145,16 +167,34 @@ const EventModal = () => {
 
   useEffect(() => {
     if (isEditing) {
-      const { title, date, startTime, endTime, description, recurrence, color } = selectedEvent;
+      const { title, date, startTime, endTime, description, recurrence, color, endDate: eventEndDate, customInterval: eventCustomInterval, weeklyDays: eventWeeklyDays } = selectedEvent;
       setTitle(title);
       setDate(date);
       setStartTime(startTime || selectedEvent.time);
       setEndTime(endTime || "");
       setDescription(description);
-      setRecurrence(recurrence);
-      setColor(color);
+      setRecurrence(recurrence || "none");
+      setColor(color || "default");
+
+      if (recurrence && recurrence !== "none") {
+        setEndDate(eventEndDate || getDefaultEndDate(date, recurrence));
+      } else {
+        setEndDate("");
+      }
+
+      setCustomInterval(eventCustomInterval || 1);
+      setWeeklyDays(eventWeeklyDays || []);
     } else if (selectedDate) {
       setDate(format(selectedDate, "yyyy-MM-dd"));
+      setTitle("");
+      setStartTime("");
+      setEndTime("");
+      setDescription("");
+      setRecurrence("none");
+      setColor("default");
+      setCustomInterval(1);
+      setWeeklyDays([]);
+      setEndDate("");
     }
   }, [isEditing, selectedDate, selectedEvent]);
 
@@ -176,6 +216,11 @@ const EventModal = () => {
       return;
     }
 
+    if (recurrence !== "none" && !endDate) {
+      toast.error("End date is required for recurring events");
+      return;
+    }
+
     const baseEvent = {
       id: isEditing ? selectedEvent.id : generateEventId(),
       title,
@@ -186,6 +231,9 @@ const EventModal = () => {
       description,
       recurrence,
       color,
+      endDate: recurrence !== "none" ? endDate : undefined,
+      customInterval: recurrence === "custom" ? customInterval : undefined,
+      weeklyDays: recurrence === "weekly" ? weeklyDays : undefined,
     };
 
     try {
@@ -321,6 +369,9 @@ const EventModal = () => {
                 <span className="label-text mr-2">End date for recurrence</span>
               </label>
               <input type="date" className="input input-bordered" value={endDate} min={date} onChange={(e) => setEndDate(e.target.value)} required />
+              <div className="label">
+                <span className="label-text-alt text-gray-500">{!endDate && recurrence !== "none" && "A default end date will be set based on recurrence type"}</span>
+              </div>
             </div>
           )}
 
@@ -356,8 +407,10 @@ const EventModal = () => {
               <label className="label">
                 <span className="label-text mr-3">Repeat every</span>
               </label>
-              <input type="number" min="1" className="input input-bordered w-20" value={customInterval} onChange={(e) => setCustomInterval(Number(e.target.value))} />
-              <span className="text-sm mt-1 text-gray-500 ml-2">week(s)</span>
+              <div className="flex items-center gap-2">
+                <input type="number" min="1" className="input input-bordered w-20" value={customInterval} onChange={(e) => setCustomInterval(Number(e.target.value))} />
+                <span className="text-sm text-gray-500">week(s)</span>
+              </div>
             </div>
           )}
 
