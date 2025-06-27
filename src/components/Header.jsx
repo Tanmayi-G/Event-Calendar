@@ -4,7 +4,7 @@ import { format, startOfToday, addMonths, subMonths, addWeeks, subWeeks, addDays
 import { useState, useEffect, useRef } from "react";
 
 const Header = () => {
-  const { currentDate, setCurrentDate, viewMode, setViewMode, events, searchQuery, setSearchQuery, filteredEvents } = useCalendar();
+  const { currentDate, setCurrentDate, viewMode, setViewMode, events, searchQuery, setSearchQuery, filteredEvents, setIsSidebarOpen, isSidebarOpen } = useCalendar();
 
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchResults, setSearchResults] = useState([]);
@@ -65,20 +65,20 @@ const Header = () => {
     <div className="mx-3 py-4 flex justify-between items-center relative">
       <div className="flex items-center gap-3">
         <div className="hidden items-center lg:flex">
-          <button className="btn btn-ghost p-2 mx-2">
+          <button className="btn btn-ghost p-2 mr-3" onClick={() => setIsSidebarOpen((prev) => !prev)} title={isSidebarOpen ? "Hide sidebar" : "Show sidebar"}>
             <Menu />
           </button>
           <CalendarDays />
           <h1 className="text-lg font-bold ml-1">Calendar</h1>
         </div>
 
-        <button onClick={handleToday} className="btn btn-outline mx-2">
+        <button onClick={handleToday} className="btn rounded-full border-white px-5 mx-2">
           Today
         </button>
 
         <div className="flex items-center gap-3">
-          <ChevronLeft className="cursor-pointer hover:bg-gray-100 rounded p-1" onClick={handlePrev} />
-          <ChevronRight className="cursor-pointer hover:bg-gray-100 rounded p-1" onClick={handleNext} />
+          <ChevronLeft className="cursor-pointer hover:bg-base-200 rounded p-1" onClick={handlePrev} />
+          <ChevronRight className="cursor-pointer hover:bg-base-200 rounded p-1" onClick={handleNext} />
         </div>
 
         <h1 className="hidden text-lg lg:block">{format(currentDate, viewMode === "day" ? "EEEE, MMMM d yyyy" : viewMode === "week" ? "wo 'week of' MMMM yyyy" : "MMMM yyyy")}</h1>
